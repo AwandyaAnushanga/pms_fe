@@ -29,10 +29,10 @@ export const Leases: React.FC<LeasesProps> = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     tenant_id: '',
     unit_id: '',
-    rent_amount: '',
-    deposit_amount: '',
-    start_date: '',
-    end_date: '',
+    rentAmount: '',
+    depositAmount: '',
+    startDate: '',
+    endDate: '',
     status: 'Active'
   });
 
@@ -43,96 +43,131 @@ export const Leases: React.FC<LeasesProps> = ({ onNavigate }) => {
   }, []);
 
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = leases.filter(
-        (lease) =>
-          lease.tenant?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          lease.tenant?.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          lease.unit?.unit_number.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredLeases(filtered);
-    } else {
-      setFilteredLeases(leases);
-    }
-  }, [searchTerm, leases]);
+  if (searchTerm) {
+    const filtered = leases.filter(
+      (lease) =>
+        lease.tenant?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lease.tenant?.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lease.unit?.unitNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredLeases(filtered);
+  } else {
+    setFilteredLeases(leases);
+  }
+}, [searchTerm, leases]);
+
+
+
 
   const fetchLeases = async () => {
-    try {
-      const { data, error } = await api.leases.getAll<Lease[]>();
+  try {
+    const { data, error } = await api.leases.getAll<any>();
 
-      if (error) throw new Error(error);
-      setLeases(data || []);
-      setFilteredLeases(data || []);
-    } catch (error) {
-      showToast('Failed to fetch leases', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (error) throw new Error(error);
+    
+    // Extract content array from paginated response
+    const leasesData = data?.content && Array.isArray(data.content) ? data.content : [];
+    setLeases(leasesData);
+    setFilteredLeases(leasesData);
+  } catch (error) {
+    showToast('Failed to fetch leases', 'error');
+    setLeases([]);
+    setFilteredLeases([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const fetchTenants = async () => {
-    try {
-      const { data, error } = await api.tenants.getAll<Tenant[]>();
-      if (error) throw new Error(error);
-      setTenants(data || []);
-    } catch (error) {
-      showToast('Failed to fetch tenants', 'error');
-    }
-  };
 
-  const fetchUnits = async () => {
-    try {
-      const { data, error } = await api.units.getAll<Unit[]>();
-      if (error) throw new Error(error);
-      setUnits(data || []);
-    } catch (error) {
-      showToast('Failed to fetch units', 'error');
-    }
-  };
+
+ const fetchTenants = async () => {
+  try {
+    const { data, error } = await api.tenants.getAll<any>();
+    console.log('Tenants API response:', data);
+    if (error) throw new Error(error);
+    
+    // Extract content array from paginated response
+    const tenantsData = data?.content && Array.isArray(data.content) ? data.content : [];
+    console.log('Tenants after processing:', tenantsData);
+    setTenants(tenantsData);
+  } catch (error) {
+    console.error('Fetch tenants error:', error);
+    showToast('Failed to fetch tenants', 'error');
+    setTenants([]);
+  }
+};
+
+const fetchUnits = async () => {
+  try {
+    const { data, error } = await api.units.getAll<any>();
+    console.log('Units API response:', data);
+    if (error) throw new Error(error);
+    
+    // Extract content array from paginated response
+    const unitsData = data?.content && Array.isArray(data.content) ? data.content : [];
+    console.log('Units after processing:', unitsData);
+    setUnits(unitsData);
+  } catch (error) {
+    console.error('Fetch units error:', error);
+    showToast('Failed to fetch units', 'error');
+    setUnits([]);
+  }
+};
+
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const payload = {
-      ...formData,
-      rent_amount: parseFloat(formData.rent_amount),
-      deposit_amount: parseFloat(formData.deposit_amount)
-    };
-
-    try {
-      if (editingLease) {
-        const { error } = await api.leases.update(editingLease.id, payload);
-
-        if (error) throw new Error(error);
-        showToast('Lease updated successfully', 'success');
-      } else {
-        const { error } = await api.leases.create(payload);
-
-        if (error) throw new Error(error);
-        showToast('Lease created successfully', 'success');
-      }
-
-      setIsModalOpen(false);
-      resetForm();
-      fetchLeases();
-    } catch (error) {
-      showToast('Failed to save lease', 'error');
-    }
+  const payload = {
+    tenantId: formData.tenant_id,  // Backend expects camelCase
+    unitId: formData.unit_id,      // Backend expects camelCase
+    rentAmount: parseFloat(formData.rentAmount),
+    depositAmount: parseFloat(formData.depositAmount),
+    startDate: formData.startDate,
+    endDate: formData.endDate,
+    status: formData.status
   };
+
+  console.log('Payload being sent:', payload); // Debug log
+
+  try {
+    if (editingLease) {
+      const { error } = await api.leases.update(editingLease.id, payload);
+
+      if (error) throw new Error(error);
+      showToast('Lease updated successfully', 'success');
+    } else {
+      const { error } = await api.leases.create(payload);
+
+      if (error) throw new Error(error);
+      showToast('Lease created successfully', 'success');
+    }
+
+    setIsModalOpen(false);
+    resetForm();
+    fetchLeases();
+  } catch (error) {
+    showToast('Failed to save lease', 'error');
+  }
+};
+
 
   const handleEdit = (lease: Lease) => {
-    setEditingLease(lease);
-    setFormData({
-      tenant_id: lease.tenant_id,
-      unit_id: lease.unit_id,
-      rent_amount: lease.rent_amount.toString(),
-      deposit_amount: lease.deposit_amount.toString(),
-      start_date: lease.start_date,
-      end_date: lease.end_date,
-      status: lease.status
-    });
-    setIsModalOpen(true);
-  };
+  setEditingLease(lease);
+  setFormData({
+    tenant_id: lease.tenantId || '',
+    unit_id: lease.unitId || '',
+    rentAmount: lease.rentAmount?.toString() || '',
+    depositAmount: lease.depositAmount?.toString() || '',
+    startDate: lease.startDate || '',
+    endDate: lease.endDate || '',
+    status: lease.status
+  });
+  setIsModalOpen(true);
+};
+
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this lease?')) return;
@@ -152,10 +187,10 @@ export const Leases: React.FC<LeasesProps> = ({ onNavigate }) => {
     setFormData({
       tenant_id: '',
       unit_id: '',
-      rent_amount: '',
-      deposit_amount: '',
-      start_date: '',
-      end_date: '',
+      rentAmount: '',
+      depositAmount: '',
+      startDate: '',
+      endDate: '',
       status: 'Active'
     });
     setEditingLease(null);
@@ -177,64 +212,70 @@ export const Leases: React.FC<LeasesProps> = ({ onNavigate }) => {
     return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
   };
 
-  const columns = [
-    {
-      key: 'tenant',
-      label: 'Tenant',
-      render: (lease: Lease) =>
-        lease.tenant ? `${lease.tenant.first_name} ${lease.tenant.last_name}` : 'N/A'
-    },
-    {
-      key: 'unit',
-      label: 'Unit',
-      render: (lease: Lease) => (lease.unit ? `Unit ${lease.unit.unit_number}` : 'N/A')
-    },
-    {
-      key: 'rent_amount',
-      label: 'Rent',
-      render: (lease: Lease) => `$${lease.rent_amount}`
-    },
-    {
-      key: 'start_date',
-      label: 'Start Date',
-      render: (lease: Lease) => new Date(lease.start_date).toLocaleDateString()
-    },
-    {
-      key: 'end_date',
-      label: 'End Date',
-      render: (lease: Lease) => (
-        <div className="flex items-center gap-2">
-          <span>{new Date(lease.end_date).toLocaleDateString()}</span>
-          {isLeaseExpiringSoon(lease.end_date) && lease.status === 'Active' && (
-            <AlertCircle className="w-4 h-4 text-yellow-600" />
-          )}
-        </div>
-      )
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (lease: Lease) => getStatusBadge(lease.status)
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (lease: Lease) => (
-        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="sm" onClick={() => handleEdit(lease)}>
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleDelete(lease.id)}>
-            <Trash2 className="w-4 h-4 text-red-600" />
-          </Button>
-        </div>
-      )
-    }
-  ];
+ const columns = [
+  {
+    key: 'tenant',
+    label: 'Tenant',
+    render: (lease: Lease) =>
+      lease.tenant ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : 'N/A'
+  },
+  {
+    key: 'unit',
+    label: 'Unit',
+    render: (lease: Lease) => (lease.unit ? `Unit ${lease.unit.unitNumber}` : 'N/A')
+  },
+  {
+    key: 'rentAmount',
+    label: 'Rent',
+    render: (lease: Lease) => `$${lease.rentAmount}`
+  },
+  {
+    key: 'startDate',
+    label: 'Start Date',
+    render: (lease: Lease) => new Date(lease.startDate).toLocaleDateString()
+  },
+  {
+    key: 'endDate',
+    label: 'End Date',
+    render: (lease: Lease) => (
+      <div className="flex items-center gap-2">
+        <span>{new Date(lease.endDate).toLocaleDateString()}</span>
+        {isLeaseExpiringSoon(lease.endDate) && lease.status === 'Active' && (
+          <AlertCircle className="w-4 h-4 text-yellow-600" />
+        )}
+      </div>
+    )
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    render: (lease: Lease) => getStatusBadge(lease.status)
+  },
+  {
+    key: 'actions',
+    label: 'Actions',
+    render: (lease: Lease) => (
+      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <Button variant="ghost" size="sm" onClick={() => handleEdit(lease)}>
+          <Edit className="w-4 h-4" />
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => handleDelete(lease.id)}>
+          <Trash2 className="w-4 h-4 text-red-600" />
+        </Button>
+      </div>
+    )
+  }
+];
 
-  const expiringLeases = leases.filter(
-    (lease) => isLeaseExpiringSoon(lease.end_date) && lease.status === 'Active'
-  );
+
+ const expiringLeases = Array.isArray(leases) 
+  ? leases.filter(
+      (lease) => isLeaseExpiringSoon(lease.endDate) && lease.status === 'Active'
+    )
+  : [];
+
+
+
 
   return (
     <DashboardLayout
@@ -292,50 +333,50 @@ export const Leases: React.FC<LeasesProps> = ({ onNavigate }) => {
               label="Tenant"
               value={formData.tenant_id}
               onChange={(e) => setFormData({ ...formData, tenant_id: e.target.value })}
-              options={tenants.map((tenant) => ({
+              options={Array.isArray(tenants) ? tenants.map((tenant) => ({
                 value: tenant.id,
-                label: `${tenant.first_name} ${tenant.last_name}`
-              }))}
+                label: `${tenant.firstName || (tenant as any).first_name} ${tenant.lastName || (tenant as any).last_name}`
+              })) : []}
               required
             />
             <Select
               label="Unit"
               value={formData.unit_id}
               onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
-              options={units.map((unit) => ({
+              options={Array.isArray(units) ? units.map((unit) => ({
                 value: unit.id,
-                label: `Unit ${unit.unit_number} - ${unit.property?.propertyName || 'N/A'}`
-              }))}
+                label: `Unit ${unit.unitNumber || (unit as any).unit_number} - ${unit.property?.propertyName || (unit as any).property?.property_name || 'N/A'}`
+              })) : []}
               required
             />
             <Input
               label="Rent Amount"
               type="number"
               step="0.01"
-              value={formData.rent_amount}
-              onChange={(e) => setFormData({ ...formData, rent_amount: e.target.value })}
+              value={formData.rentAmount}
+              onChange={(e) => setFormData({ ...formData, rentAmount: e.target.value })}
               required
             />
             <Input
               label="Deposit Amount"
               type="number"
               step="0.01"
-              value={formData.deposit_amount}
-              onChange={(e) => setFormData({ ...formData, deposit_amount: e.target.value })}
+              value={formData.depositAmount}
+              onChange={(e) => setFormData({ ...formData, depositAmount: e.target.value })}
               required
             />
             <Input
               label="Start Date"
               type="date"
-              value={formData.start_date}
-              onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
               required
             />
             <Input
               label="End Date"
               type="date"
-              value={formData.end_date}
-              onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
               required
             />
             <Select
