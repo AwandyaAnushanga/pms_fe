@@ -29,7 +29,9 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
     description: '',
     priority: 'Medium',
     assigned_to: '',
-    status: 'Pending'
+    status: 1 as 1 | 2 | 3, // 1 - Not Completed, 2 - Started, 3 - Completed
+    maintenance_date: '',
+    cost: 0
   });
 
   useEffect(() => {
@@ -42,9 +44,11 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
       const { data, error } = await api.maintenance.getAll();
 
       if (error) throw new Error(error);
-      setRequests(data || []);
+      // Ensure data is always an array
+      setRequests(Array.isArray(data) ? data : []);
     } catch (error) {
       showToast('Failed to fetch maintenance requests', 'error');
+      setRequests([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -54,9 +58,11 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
     try {
       const { data, error } = await api.units.getAll();
       if (error) throw new Error(error);
-      setUnits(data || []);
+      // Ensure data is always an array
+      setUnits(Array.isArray(data) ? data : []);
     } catch (error) {
       showToast('Failed to fetch units', 'error');
+      setUnits([]); // Set empty array on error
     }
   };
 
@@ -92,7 +98,9 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
       description: request.description,
       priority: request.priority,
       assigned_to: request.assigned_to,
-      status: request.status
+      status: request.status,
+      maintenance_date: request.maintenance_date || '',
+      cost: request.cost || 0
     });
     setIsModalOpen(true);
   };
@@ -111,7 +119,7 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const handleStatusChange = async (id: string, newStatus: 1 | 2 | 3) => {
     try {
       const { error } = await api.maintenance.update(id, { status: newStatus });
 
@@ -130,7 +138,9 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
       description: '',
       priority: 'Medium',
       assigned_to: '',
-      status: 'Pending'
+      status: 1,
+      maintenance_date: '',
+      cost: 0
     });
     setEditingRequest(null);
   };
@@ -144,16 +154,10 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
     return <Badge variant={variants[priority] || 'default'}>{priority}</Badge>;
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'warning' | 'info' | 'success'> = {
-      Pending: 'warning',
-      'In Progress': 'info',
-      Completed: 'success'
-    };
-    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
-  };
 
-  const filterByStatus = (status: string) => {
+  const filterByStatus = (status: 1 | 2 | 3) => {
+    // Ensure requests is always an array
+    if (!Array.isArray(requests)) return [];
     return requests.filter((req) => req.status === status);
   };
 
@@ -167,9 +171,9 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
     );
   };
 
-  const pendingRequests = filteredBySearch(filterByStatus('Pending'));
-  const inProgressRequests = filteredBySearch(filterByStatus('In Progress'));
-  const completedRequests = filteredBySearch(filterByStatus('Completed'));
+  const notCompletedRequests = filteredBySearch(filterByStatus(1));
+  const startedRequests = filteredBySearch(filterByStatus(2));
+  const completedRequests = filteredBySearch(filterByStatus(3));
 
   const KanbanColumn = ({
     title,
@@ -178,7 +182,7 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
   }: {
     title: string;
     requests: MaintenanceRequest[];
-    status: string;
+    status: 1 | 2 | 3;
   }) => (
     <div className="flex-1 bg-gray-100 rounded-lg p-4">
       <div className="flex items-center justify-between mb-4">
@@ -207,40 +211,47 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
             </div>
 
             {request.assigned_to && (
-              <div className="text-xs text-gray-600 mb-3">
+              <div className="text-xs text-gray-600">
                 Assigned to: {request.assigned_to}
               </div>
             )}
 
-            <div className="flex items-center gap-2 pt-3 border-t">
-              {status !== 'Pending' && (
+            <div className="text-xs text-gray-600 mt-2">
+              <div>Date: {request.maintenance_date ? new Date(request.maintenance_date).toLocaleDateString() : 'Not set'}</div>
+              <div className="font-semibold text-gray-900 mt-1">
+                Cost: ${request.cost ? request.cost.toFixed(2) : '0.00'}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-3 border-t mt-3">
+              {status !== 1 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() =>
                     handleStatusChange(
                       request.id,
-                      status === 'In Progress' ? 'Pending' : 'In Progress'
+                      status === 2 ? 1 : 2
                     )
                   }
                   className="text-xs"
                 >
-                  {status === 'In Progress' ? '← Pending' : '← In Progress'}
+                  {status === 2 ? '← Not Completed' : '← Started'}
                 </Button>
               )}
-              {status !== 'Completed' && (
+              {status !== 3 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() =>
                     handleStatusChange(
                       request.id,
-                      status === 'Pending' ? 'In Progress' : 'Completed'
+                      status === 1 ? 2 : 3
                     )
                   }
                   className="text-xs"
                 >
-                  {status === 'Pending' ? 'Start →' : 'Complete →'}
+                  {status === 1 ? 'Start →' : 'Complete →'}
                 </Button>
               )}
               <div className="flex-1"></div>
@@ -286,13 +297,13 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
           <div className="text-center py-8 text-gray-500">Loading...</div>
         ) : (
           <div className="flex gap-4 overflow-x-auto pb-4">
-            <KanbanColumn title="Pending" requests={pendingRequests} status="Pending" />
+            <KanbanColumn title="Not Completed" requests={notCompletedRequests} status={1} />
             <KanbanColumn
-              title="In Progress"
-              requests={inProgressRequests}
-              status="In Progress"
+              title="Started"
+              requests={startedRequests}
+              status={2}
             />
-            <KanbanColumn title="Completed" requests={completedRequests} status="Completed" />
+            <KanbanColumn title="Completed" requests={completedRequests} status={3} />
           </div>
         )}
 
@@ -309,10 +320,10 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
               label="Unit"
               value={formData.unit_id}
               onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
-              options={units.map((unit) => ({
+              options={Array.isArray(units) ? units.map((unit) => ({
                 value: unit.id,
                 label: `Unit ${unit.unit_number} - ${unit.property?.propertyName || 'N/A'}`
-              }))}
+              })) : []}
               required
             />
             <Select
@@ -356,14 +367,30 @@ export const Maintenance: React.FC<MaintenanceProps> = ({ onNavigate }) => {
               value={formData.assigned_to}
               onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value })}
             />
+            <Input
+              label="Maintenance Date"
+              type="date"
+              value={formData.maintenance_date}
+              onChange={(e) => setFormData({ ...formData, maintenance_date: e.target.value })}
+              required
+            />
+            <Input
+              label="Cost"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.cost || 0}
+              onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
+              required
+            />
             <Select
               label="Status"
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              value={formData.status.toString()}
+              onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) as 1 | 2 | 3 })}
               options={[
-                { value: 'Pending', label: 'Pending' },
-                { value: 'In Progress', label: 'In Progress' },
-                { value: 'Completed', label: 'Completed' }
+                { value: '1', label: 'Not Completed' },
+                { value: '2', label: 'Started' },
+                { value: '3', label: 'Completed' }
               ]}
               required
             />
