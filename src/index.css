@@ -2,6 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Light Mode - Professional White + Blue Gradient */
+  html.light {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #e0f2fe 100%);
+  }
+
+  /* Dark Mode - Deep Blue Gradient with Glass Effect */
+  html.dark {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0c4a6e 100%);
+  }
+
+  body {
+    @apply min-h-screen transition-colors duration-300;
+    background: inherit;
+  }
+}
+
+@layer components {
+  /* Glass Card Utility */
+  .glass-card {
+    @apply backdrop-blur-xl bg-white/70 dark:bg-slate-800/70 border border-white/20 dark:border-slate-700/50 shadow-glass;
+  }
+
+  /* Glass Button */
+  .glass-button {
+    @apply backdrop-blur-md bg-white/10 dark:bg-slate-800/30 border border-white/20 dark:border-slate-700/50 hover:bg-white/20 dark:hover:bg-slate-700/40 transition-all duration-300;
+  }
+
+  /* Liquid Glass Effect */
+  .liquid-glass {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Shimmer Effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Custom Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary-400/30 hover:bg-primary-400/50 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-500/60;
+  }
+}
+
 @keyframes slide-in {
   from {
     transform: translateX(100%);
