@@ -21,17 +21,32 @@ export interface Property {
   owner?: Owner;
 }
 
+// export interface Unit {
+//   id: string;
+//   unit_number: string;
+//   property_id: string;
+//   size: number;
+//   floor: number;
+//   status: 'Available' | 'Occupied' | 'Under Maintenance';
+//   rent: number;
+//   created_at?: string;
+//   updated_at?: string;
+//   property?: Property;
+// }
+
 export interface Unit {
   id: string;
-  unit_number: string;
-  property_id: string;
+  unitNumber: string;
   size: number;
   floor: number;
   status: 'Available' | 'Occupied' | 'Under Maintenance';
   rent: number;
+  property: Property;       // backend sends full object
+  photos?: UnitPhoto[];     // optional
+  tenants?: Tenant[];
+  maintenanceRequests?: MaintenanceRequest[];
   created_at?: string;
   updated_at?: string;
-  property?: Property;
 }
 
 export interface Tenant {
