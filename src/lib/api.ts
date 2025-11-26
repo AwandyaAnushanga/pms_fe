@@ -266,11 +266,13 @@ const handleResponse = async (res: Response) => {
 
   try {
     const json = JSON.parse(text);
+    console.log('API Response:', json); // Add this line for debugging
     return { data: json, error: null };
   } catch (e) {
     return { data: null, error: 'Invalid JSON from server' };
   }
 };
+
 
 export const api = {
   owners: {
@@ -365,14 +367,6 @@ export const api = {
       const response = await fetch(`${API_BASE_URL}/tenants`);
       return handleResponse(response);
     },
-    // create: async (data: any) => {
-    //   const response = await fetch(`${API_BASE_URL}/tenants`, {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify(data)
-    //   });
-    //   return handleResponse(response);
-    // },
 
     create: async (data: any) => {
       try {
