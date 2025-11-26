@@ -50,12 +50,12 @@ export interface Tenant {
 
 export interface Lease {
   id: string;
-  tenant_id: string;
-  unit_id: string;
-  rent_amount: number;
-  deposit_amount: number;
-  start_date: string;
-  end_date: string;
+  tenantId?: string;     // Backend uses camelCase
+  unitId?: string;       // Backend uses camelCase
+  rentAmount: number;    // Backend uses camelCase
+  depositAmount: number; // Backend uses camelCase
+  startDate: string;     // Backend uses camelCase
+  endDate: string;       // Backend uses camelCase
   status: 'Active' | 'Expired' | 'Terminated';
   created_at?: string;
   updated_at?: string;
@@ -63,16 +63,21 @@ export interface Lease {
   unit?: Unit;
 }
 
+
 export interface Payment {
   id: string;
-  lease_id: string;
+  leaseId?: string;
+  lease_id?: string; // Keep for backward compatibility
   amount: number;
-  payment_date: string;
-  payment_status: 'Pending' | 'Paid' | 'Overdue';
+  paymentDate?: string;
+  payment_date?: string; // Keep for backward compatibility
+  paymentStatus?: 'Pending' | 'Paid' | 'Overdue';
+  payment_status?: 'Pending' | 'Paid' | 'Overdue'; // Keep for backward compatibility
   created_at?: string;
   updated_at?: string;
   lease?: Lease;
 }
+
 
 export interface MaintenanceRequest {
   id: string;
@@ -81,7 +86,7 @@ export interface MaintenanceRequest {
   description: string;
   priority: 'Low' | 'Medium' | 'High';
   assigned_to: string;
-  status: 1 | 2 | 3; // 1 - Not Completed, 2 - Started, 3 - Completed
+  status: 'Not Completed' | 'Started' | 'Completed'; // Changed from number to string
   maintenance_date?: string;
   cost?: number;
   created_at?: string;

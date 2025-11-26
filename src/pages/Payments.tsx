@@ -27,11 +27,11 @@ export const Payments: React.FC<PaymentsProps> = ({ onNavigate }) => {
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
-    lease_id: '',
-    amount: '',
-    payment_date: '',
-    payment_status: 'Pending'
-  });
+  leaseId: '',
+  amount: '',
+  paymentDate: '',
+  paymentStatus: 'Pending'
+});
 
   const [filters, setFilters] = useState({
     status: '',
@@ -49,99 +49,124 @@ export const Payments: React.FC<PaymentsProps> = ({ onNavigate }) => {
   }, [searchTerm, payments, filters]);
 
   const applyFilters = () => {
-    let filtered = [...payments];
+  let filtered = Array.isArray(payments) ? [...payments] : [];
 
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (payment) =>
-          payment.lease?.tenant?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          payment.lease?.tenant?.last_name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+  if (searchTerm) {
+    filtered = filtered.filter(
+      (payment) =>
+        payment.lease?.tenant?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.lease?.tenant?.lastName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }
 
-    if (filters.status) {
-      filtered = filtered.filter((payment) => payment.payment_status === filters.status);
-    }
+  if (filters.status) {
+    filtered = filtered.filter((payment) => 
+      (payment.paymentStatus || payment.payment_status) === filters.status
+    );
+  }
 
-    if (filters.dateFrom) {
-      filtered = filtered.filter(
-        (payment) => new Date(payment.payment_date) >= new Date(filters.dateFrom)
-      );
-    }
+  if (filters.dateFrom) {
+    filtered = filtered.filter((payment) => {
+      const paymentDate = payment.paymentDate || payment.payment_date;
+      return paymentDate && new Date(paymentDate) >= new Date(filters.dateFrom);
+    });
+  }
 
-    if (filters.dateTo) {
-      filtered = filtered.filter(
-        (payment) => new Date(payment.payment_date) <= new Date(filters.dateTo)
-      );
-    }
+  if (filters.dateTo) {
+    filtered = filtered.filter((payment) => {
+      const paymentDate = payment.paymentDate || payment.payment_date;
+      return paymentDate && new Date(paymentDate) <= new Date(filters.dateTo);
+    });
+  }
 
-    setFilteredPayments(filtered);
-  };
+  setFilteredPayments(filtered);
+};
+
 
   const fetchPayments = async () => {
-    try {
-      const { data, error } = await api.payments.getAll();
+  try {
+    const { data, error } = await api.payments.getAll();
+    console.log('Payments API response:', data); // Debug log
+    
+    if (error) throw new Error(error);
+    
+    // Extract content array from paginated response
+    const paymentsData = data?.content && Array.isArray(data.content) ? data.content : [];
+    setPayments(paymentsData);
+    setFilteredPayments(paymentsData);
+  } catch (error) {
+    console.error('Fetch payments error:', error);
+    showToast('Failed to fetch payments', 'error');
+    setPayments([]);
+    setFilteredPayments([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
-      if (error) throw new Error(error);
-      setPayments(data || []);
-      setFilteredPayments(data || []);
-    } catch (error) {
-      showToast('Failed to fetch payments', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchLeases = async () => {
+  try {
+    const { data, error } = await api.leases.getAll();
+    console.log('Leases API response:', data); // Debug log
+    
+    if (error) throw new Error(error);
+    
+    // Extract content array from paginated response
+    const leasesData = data?.content && Array.isArray(data.content) ? data.content : [];
+    const activeLeases = leasesData.filter((lease: any) => lease.status === 'Active');
+    setLeases(activeLeases);
+  } catch (error) {
+    console.error('Fetch leases error:', error);
+    showToast('Failed to fetch leases', 'error');
+    setLeases([]);
+  }
+};
 
-  const fetchLeases = async () => {
-    try {
-      const { data, error } = await api.leases.getAll();
-      if (error) throw new Error(error);
-      const activeLeases = data?.filter((lease: any) => lease.status === 'Active') || [];
-      setLeases(activeLeases);
-    } catch (error) {
-      showToast('Failed to fetch leases', 'error');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const payload = {
-      ...formData,
-      amount: parseFloat(formData.amount)
-    };
+  const payload = {
+    leaseId: formData.leaseId,
+    amount: parseFloat(formData.amount),
+    paymentDate: formData.paymentDate,
+    paymentStatus: formData.paymentStatus
+  };
 
-    try {
-      if (editingPayment) {
-        const { error } = await api.payments.update(editingPayment.id, payload);
+  console.log('Payment payload:', payload); // Debug log
 
-        if (error) throw new Error(error);
-        showToast('Payment updated successfully', 'success');
-      } else {
-        const { error } = await api.payments.create(payload);
+  try {
+    if (editingPayment) {
+      const { error } = await api.payments.update(editingPayment.id, payload);
 
-        if (error) throw new Error(error);
-        showToast('Payment created successfully', 'success');
-      }
+      if (error) throw new Error(error);
+      showToast('Payment updated successfully', 'success');
+    } else {
+      const { error } = await api.payments.create(payload);
 
-      setIsModalOpen(false);
-      resetForm();
-      fetchPayments();
-    } catch (error) {
-      showToast('Failed to save payment', 'error');
+      if (error) throw new Error(error);
+      showToast('Payment created successfully', 'success');
     }
-  };
 
-  const handleEdit = (payment: Payment) => {
-    setEditingPayment(payment);
-    setFormData({
-      lease_id: payment.lease_id,
-      amount: payment.amount.toString(),
-      payment_date: payment.payment_date,
-      payment_status: payment.payment_status
-    });
-    setIsModalOpen(true);
-  };
+    setIsModalOpen(false);
+    resetForm();
+    fetchPayments();
+  } catch (error) {
+    showToast('Failed to save payment', 'error');
+  }
+};
+
+
+ const handleEdit = (payment: Payment) => {
+  setEditingPayment(payment);
+  setFormData({
+    leaseId: payment.lease_id || (payment as any).leaseId || '',
+    amount: payment.amount.toString(),
+    paymentDate: payment.payment_date || (payment as any).paymentDate || '',
+    paymentStatus: payment.payment_status || (payment as any).paymentStatus || 'Pending'
+  });
+  setIsModalOpen(true);
+};
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this payment?')) return;
@@ -158,14 +183,14 @@ export const Payments: React.FC<PaymentsProps> = ({ onNavigate }) => {
   };
 
   const resetForm = () => {
-    setFormData({
-      lease_id: '',
-      amount: '',
-      payment_date: '',
-      payment_status: 'Pending'
-    });
-    setEditingPayment(null);
-  };
+  setFormData({
+    leaseId: '',
+    amount: '',
+    paymentDate: '',
+    paymentStatus: 'Pending'
+  });
+  setEditingPayment(null);
+};
 
   const clearFilters = () => {
     setFilters({
@@ -185,50 +210,57 @@ export const Payments: React.FC<PaymentsProps> = ({ onNavigate }) => {
   };
 
   const columns = [
-    {
-      key: 'lease',
-      label: 'Tenant',
-      render: (payment: Payment) =>
-        payment.lease?.tenant
-          ? `${payment.lease.tenant.first_name} ${payment.lease.tenant.last_name}`
-          : 'N/A'
-    },
-    {
-      key: 'unit',
-      label: 'Unit',
-      render: (payment: Payment) =>
-        payment.lease?.unit ? `Unit ${payment.lease.unit.unit_number}` : 'N/A'
-    },
-    {
-      key: 'amount',
-      label: 'Amount',
-      render: (payment: Payment) => `$${payment.amount}`
-    },
-    {
-      key: 'payment_date',
-      label: 'Payment Date',
-      render: (payment: Payment) => new Date(payment.payment_date).toLocaleDateString()
-    },
-    {
-      key: 'payment_status',
-      label: 'Status',
-      render: (payment: Payment) => getStatusBadge(payment.payment_status)
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (payment: Payment) => (
-        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)}>
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleDelete(payment.id)}>
-            <Trash2 className="w-4 h-4 text-red-600" />
-          </Button>
-        </div>
-      )
+  {
+    key: 'lease',
+    label: 'Tenant',
+    render: (payment: Payment) =>
+      payment.lease?.tenant
+        ? `${payment.lease.tenant.firstName} ${payment.lease.tenant.lastName}`
+        : 'N/A'
+  },
+  {
+    key: 'unit',
+    label: 'Unit',
+    render: (payment: Payment) =>
+      payment.lease?.unit ? `Unit ${payment.lease.unit.unitNumber}` : 'N/A'
+  },
+  {
+    key: 'amount',
+    label: 'Amount',
+    render: (payment: Payment) => `$${payment.amount}`
+  },
+  {
+    key: 'payment_date',
+    label: 'Payment Date',
+    render: (payment: Payment) => {
+      const date = payment.paymentDate || payment.payment_date;
+      return date ? new Date(date).toLocaleDateString() : 'N/A';
     }
-  ];
+  },
+  {
+    key: 'payment_status',
+    label: 'Status',
+    render: (payment: Payment) => {
+      const status = payment.paymentStatus || payment.payment_status || 'Pending';
+      return getStatusBadge(status);
+    }
+  },
+  {
+    key: 'actions',
+    label: 'Actions',
+    render: (payment: Payment) => (
+      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)}>
+          <Edit className="w-4 h-4" />
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => handleDelete(payment.id)}>
+          <Trash2 className="w-4 h-4 text-red-600" />
+        </Button>
+      </div>
+    )
+  }
+];
+
 
   return (
     <DashboardLayout
@@ -281,11 +313,11 @@ export const Payments: React.FC<PaymentsProps> = ({ onNavigate }) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Select
               label="Lease"
-              value={formData.lease_id}
-              onChange={(e) => setFormData({ ...formData, lease_id: e.target.value })}
+              value={formData.leaseId}
+              onChange={(e) => setFormData({ ...formData, leaseId: e.target.value })}
               options={leases.map((lease) => ({
                 value: lease.id,
-                label: `${lease.tenant?.first_name} ${lease.tenant?.last_name} - Unit ${lease.unit?.unit_number}`
+                label: `${lease.tenant?.firstName} ${lease.tenant?.lastName} - Unit ${lease.unit?.unitNumber}`
               }))}
               required
             />
@@ -300,14 +332,14 @@ export const Payments: React.FC<PaymentsProps> = ({ onNavigate }) => {
             <Input
               label="Payment Date"
               type="date"
-              value={formData.payment_date}
-              onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
+              value={formData.paymentDate}
+              onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
               required
             />
             <Select
               label="Payment Status"
-              value={formData.payment_status}
-              onChange={(e) => setFormData({ ...formData, payment_status: e.target.value })}
+              value={formData.paymentStatus}
+              onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
               options={[
                 { value: 'Pending', label: 'Pending' },
                 { value: 'Paid', label: 'Paid' },
@@ -315,6 +347,7 @@ export const Payments: React.FC<PaymentsProps> = ({ onNavigate }) => {
               ]}
               required
             />
+
             <div className="flex gap-3 justify-end pt-4">
               <Button
                 type="button"
