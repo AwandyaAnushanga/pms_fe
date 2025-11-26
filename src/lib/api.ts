@@ -38,7 +38,7 @@ export const api = {
   owners: {
     getAll: async <T = any>() => {
       const response = await fetch(`${API_BASE_URL}/owners`);
-      return handleResponse<T>(response);
+      return handleResponse(response);
     },
     create: async (data: any) => {
       const response = await fetch(`${API_BASE_URL}/owners`, {
@@ -67,7 +67,7 @@ export const api = {
   properties: {
     getAll: async <T = any>() => {
       const response = await fetch(`${API_BASE_URL}/properties`);
-      return handleResponse<T>(response);
+      return handleResponse(response);
     },
     create: async (data: any) => {
       const response = await fetch(`${API_BASE_URL}/properties`, {
@@ -96,7 +96,7 @@ export const api = {
   units: {
     getAll: async <T = any>() => {
       const response = await fetch(`${API_BASE_URL}/units`);
-      return handleResponse<T>(response);
+      return handleResponse(response);
     },
     create: async (data: any) => {
       const response = await fetch(`${API_BASE_URL}/units`, {
@@ -125,7 +125,7 @@ export const api = {
   tenants: {
     getAll: async <T = any>() => {
       const response = await fetch(`${API_BASE_URL}/tenants`);
-      return handleResponse<T>(response);
+      return handleResponse(response);
     },
     create: async (data: any) => {
       const response = await fetch(`${API_BASE_URL}/tenants`, {
@@ -154,7 +154,7 @@ export const api = {
   leases: {
     getAll: async <T = any>() => {
       const response = await fetch(`${API_BASE_URL}/leases`);
-      return handleResponse<T>(response);
+      return handleResponse(response);
     },
     create: async (data: any) => {
       const response = await fetch(`${API_BASE_URL}/leases`, {
@@ -183,7 +183,7 @@ export const api = {
   payments: {
     getAll: async <T = any>() => {
       const response = await fetch(`${API_BASE_URL}/payments`);
-      return handleResponse<T>(response);
+      return handleResponse(response);
     },
     create: async (data: any) => {
       const response = await fetch(`${API_BASE_URL}/payments`, {
@@ -212,7 +212,7 @@ export const api = {
   maintenance: {
     getAll: async <T = any>() => {
       const response = await fetch(`${API_BASE_URL}/maintenance-requests`);
-      return handleResponse<T>(response);
+      return handleResponse(response);
     },
     create: async (data: any) => {
       const response = await fetch(`${API_BASE_URL}/maintenance-requests`, {
@@ -241,7 +241,7 @@ export const api = {
   dashboard: {
     getStats: async <T = any>() => {
       const response = await fetch(`${API_BASE_URL}/dashboard/stats`);
-      return handleResponse<T>(response);
+      return handleResponse(response);
     }
   }
 };
