@@ -21,19 +21,6 @@ export interface Property {
   owner?: Owner;
 }
 
-// export interface Unit {
-//   id: string;
-//   unit_number: string;
-//   property_id: string;
-//   size: number;
-//   floor: number;
-//   status: 'Available' | 'Occupied' | 'Under Maintenance';
-//   rent: number;
-//   created_at?: string;
-//   updated_at?: string;
-//   property?: Property;
-// }
-
 export interface Unit {
   id: string;
   unitNumber: string;
@@ -51,10 +38,10 @@ export interface Unit {
 
 export interface Tenant {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phone_number: string;
+  phoneNumber: string;
   unit_id?: string | null;
   created_at?: string;
   updated_at?: string;
