@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ToastProvider } from './components/ui/Toast';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { Dashboard } from './pages/Dashboard';
 import { Owners } from './pages/Owners';
 import { Properties } from './pages/Properties';
@@ -36,9 +37,11 @@ function App() {
   };
 
   return (
-    <ToastProvider>
-      {renderPage()}
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        {renderPage()}
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
 

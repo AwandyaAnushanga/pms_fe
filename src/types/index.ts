@@ -94,7 +94,9 @@ export interface MaintenanceRequest {
   description: string;
   priority: 'Low' | 'Medium' | 'High';
   assigned_to: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
+  status: 1 | 2 | 3; // 1 - Not Completed, 2 - Started, 3 - Completed
+  maintenance_date?: string;
+  cost?: number;
   created_at?: string;
   updated_at?: string;
   unit?: Unit;
